@@ -16,318 +16,543 @@ document.addEventListener('DOMContentLoaded', function() {
   const rightDoor = document.getElementById('right-door');
   const cursor = document.getElementById('cursor');
   
-  // Sound effects
+  // Create fallback textures
+  createFallbackTextures();
+  
+  // Sound effects with error handling
   const kaviBanaDay = new Howl({
-    src: [document.getElementById('kavi-bana-day').getAttribute('src')],
+    src: ['https://cdn.freesound.org/previews/655/655637_6160962-lq.mp3'], // Fallback URL
     loop: true,
     volume: 0.5,
-    html5: true
+    html5: true,
+    onloaderror: function() {
+      console.warn("Could not load day audio, using silent fallback");
+    }
   });
   
   const kaviBanaNight = new Howl({
-    src: [document.getElementById('kavi-bana-night').getAttribute('src')],
+    src: ['https://cdn.freesound.org/previews/648/648352_3242810-lq.mp3'], // Fallback URL
     loop: true,
     volume: 0.7,
-    html5: true
+    html5: true,
+    onloaderror: function() {
+      console.warn("Could not load night audio, using silent fallback");
+    }
   });
   
   const clickSound = new Howl({
-    src: [document.getElementById('click-sound').getAttribute('src')],
+    src: ['https://cdn.freesound.org/previews/651/651772_11861866-lq.mp3'], // Fallback URL
     volume: 0.8,
-    html5: true
+    html5: true,
+    onloaderror: function() {
+      console.warn("Could not load click sound, using silent fallback");
+    }
   });
   
-  // Simulation of loading progress
-  let progress = 0;
-  const loadingInterval = setInterval(() => {
-    progress += Math.random() * 10;
-    if (progress >= 100) {
-      progress = 100;
-      clearInterval(loadingInterval);
-      
-      // Fade out loading screen
-      setTimeout(() => {
-        loadingScreen.style.opacity = 0;
-        loadingScreen.style.transition = 'opacity 1s ease';
-        setTimeout(() => {
-          loadingScreen.style.display = 'none';
-          // Initialize scene after loading
-          initScene();
-        }, 1000);
-      }, 500);
+  // Create default textures for missing images
+  function createFallbackTextures() {
+    // Check if sky textures are loading properly, otherwise create fallbacks
+    checkTextureOrCreateFallback('#sky-day', createSkyTexture('#87CEEB'));
+    checkTextureOrCreateFallback('#sky-night', createSkyTexture('#0E1A40'));
+    
+    // Check ground texture
+    checkTextureOrCreateFallback('#ground-texture', createColorTexture('#8B4513'));
+    
+    // Check wood texture
+    checkTextureOrCreateFallback('#wood-texture', createWoodTexture());
+    
+    // Check fabric texture
+    checkTextureOrCreateFallback('#fabric-texture', createFabricTexture());
+    
+    // Check Jataka story images and create fallbacks with text
+    for(let i = 1; i <= 8; i++) {
+      checkTextureOrCreateFallback(`#jataka${i}`, createJatakaTexture(i));
     }
-    loadingProgress.style.width = progress + '%';
-    loadingText.textContent = `Loading Nalapana Jataka Experience... ${Math.floor(progress)}%`;
-  }, 200);
+  }
   
-  // Initialize scene
-  function initScene() {
-    updateTimeBasedElements();
+  function checkTextureOrCreateFallback(selector, fallbackFunction) {
+    const img = document.querySelector(selector);
+    if (img) {
+      img.addEventListener('error', function() {
+        console.warn(`Image ${selector} failed to load, creating fallback`);
+        const canvas = fallbackFunction();
+        img.src = canvas.toDataURL('image/png');
+      });
+      
+      // Also set fallback if src is a placeholder
+      if (img.src.includes('placeholder') || img.src.includes('storage.googleapis.com')) {
+        console.warn(`Image ${selector} is a placeholder, replacing with fallback`);
+        const canvas = fallbackFunction();
+        img.src = canvas.toDataURL('image/png');
+      }
+    }
+  }
+  
+  function createColorTexture(color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+  
+  function createSkyTexture(color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
     
-    // Set up event listeners
-    cursor.addEventListener('click', handleClick);
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, '#000000');
     
-    // Set up animation loop for continuous effects
-    setInterval(updateTimeBasedElements, 60000); // Check every minute
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Start background music based on time
-    if (isNightTime()) {
+    // Add stars if night sky
+    if (color === '#0E1A40') {
+      for (let i = 0; i < 200; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height * 0.8; // Stars in top 80%
+        const radius = Math.random() * 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.7 + 0.3})`;
+        ctx.fill();
+      }
+    }
+    
+    return canvas;
+  }
+  
+  function createWoodTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    // Base wood color
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Wood grain
+    for (let i = 0; i < 30; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, Math.random() * canvas.height);
+      ctx.bezierCurveTo(
+        canvas.width * 0.3, Math.random() * canvas.height,
+        canvas.width * 0.6, Math.random() * canvas.height,
+        canvas.width, Math.random() * canvas.height
+      );
+      ctx.lineWidth = Math.random() * 3 + 1;
+      ctx.strokeStyle = `rgba(0, 0, 0, ${Math.random() * 0.2})`;
+      ctx.stroke();
+    }
+    
+    return canvas;
+  }
+  
+  function createFabricTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    // Base fabric color
+    ctx.fillStyle = '#F5F5DC';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Fabric pattern
+    for (let x = 0; x < canvas.width; x += 4) {
+      for (let y = 0; y < canvas.height; y += 4) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.05})`;
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+    
+    return canvas;
+  }
+  
+  function createJatakaTexture(index) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    
+    // Background
+    ctx.fillStyle = '#F5F5DC';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Border
+    ctx.strokeStyle = '#8B4513';
+    ctx.lineWidth = 20;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    
+    // Title
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Nalapana Jataka`, canvas.width / 2, 60);
+    ctx.fillText(`Scene ${index}`, canvas.width / 2, 100);
+    
+    // Description text based on index
+    const descriptions = [
+      "The Bodhisatta as the leader of the monkey troop near the lake",
+      "The monkeys discovering the lake with ogre",
+      "The Bodhisatta examining the footprints around the lake",
+      "The Bodhisatta instructing monkeys to use reeds as straws",
+      "Monkeys drinking water safely using reed straws",
+      "The frustrated ogre realizing his plan has failed",
+      "The ogre departing, defeated by the Bodhisatta's wisdom",
+      "The Buddha concluding the story of his past life"
+    ];
+    
+    // Draw symbolic representation
+    const symbolSize = 150;
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    
+    // Different symbols for each scene
+    switch(index) {
+      case 1:
+        // Monkey leader - stylized monkey face
+        drawMonkeySymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 2:
+        // Lake with ogre - blue circle with red eyes
+        drawLakeWithOgreSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 3:
+        // Footprints - tracks around circle
+        drawFootprintsSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 4:
+        // Reed instruction - monkey with reed
+        drawReedInstructionSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 5:
+        // Drinking monkeys - multiple dots with reeds
+        drawDrinkingMonkeysSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 6:
+        // Frustrated ogre - angry face
+        drawFrustratedOgreSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 7:
+        // Departing ogre - retreating figure
+        drawDepartingOgreSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+      case 8:
+        // Buddha - seated figure
+        drawBuddhaSymbol(ctx, canvas.width/2, canvas.height/2, symbolSize);
+        break;
+    }
+    
+    // Scene description
+    ctx.fillStyle = '#000';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'center';
+    
+    // Word wrap the description
+    const maxWidth = canvas.width - 60;
+    const lineHeight = 30;
+    const words = descriptions[index-1].split(' ');
+    let line = '';
+    let y = canvas.height - 100;
+    
+    for (let i = 0; i < words.length; i++) {
+      const testLine = line + words[i] + ' ';
+      const metrics = ctx.measureText(testLine);
+      
+      if (metrics.width > maxWidth && i > 0) {
+        ctx.fillText(line, canvas.width/2, y);
+        line = words[i] + ' ';
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, canvas.width/2, y);
+    
+    return canvas;
+  }
+  
+  // Symbol drawing functions for Jataka scenes
+  function drawMonkeySymbol(ctx, x, y, size) {
+    // Monkey head
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Eyes
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(x - size/5, y - size/8, size/8, 0, Math.PI * 2);
+    ctx.arc(x + size/5, y - size/8, size/8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Pupils
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.arc(x - size/5, y - size/8, size/16, 0, Math.PI * 2);
+    ctx.arc(x + size/5, y - size/8, size/16, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Mouth
+    ctx.beginPath();
+    ctx.arc(x, y + size/6, size/4, 0, Math.PI);
+    ctx.stroke();
+  }
+  
+  function drawLakeWithOgreSymbol(ctx, x, y, size) {
+    // Lake
+    ctx.fillStyle = '#4682B4';
+    ctx.beginPath();
+    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Ogre eyes
+    ctx.fillStyle = 'red';
+    ctx.beginPath();
+    ctx.arc(x - size/5, y - size/5, size/10, 0, Math.PI * 2);
+    ctx.arc(x + size/5, y - size/5, size/10, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Ogre mouth
+    ctx.strokeStyle = '#300';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(x, y + size/10, size/4, 0, Math.PI);
+    ctx.stroke();
+  }
+  
+  function drawFootprintsSymbol(ctx, x, y, size) {
+    // Lake outline
+    ctx.strokeStyle = '#4682B4';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Footprints around lake
+    ctx.fillStyle = '#8B4513';
+    for (let i = 0; i < 8; i++) {
+      const angle = i * Math.PI / 4;
+      const footX = x + Math.cos(angle) * (size/2 + 20);
+      const footY = y + Math.sin(angle) * (size/2 + 20);
+      
+      // Draw simple footprint
+      ctx.beginPath();
+      ctx.ellipse(footX, footY, 15, 8, angle, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Monkey examining
+    drawSmallMonkeySymbol(ctx, x, y + size/2 + 30, size/4);
+  }
+  
+  function drawSmallMonkeySymbol(ctx, x, y, size) {
+    // Similar to drawMonkeySymbol but smaller and simpler
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(x - size/5, y - size/8, size/10, 0, Math.PI * 2);
+    ctx.arc(x + size/5, y - size/8, size/10, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  
+  function drawReedInstructionSymbol(ctx, x, y, size) {
+    // Monkey
+    drawSmallMonkeySymbol(ctx, x - size/3, y, size/2);
+    
+    // Reed
+    ctx.strokeStyle = '#228B22';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(x + size/4, y - size/2);
+    ctx.lineTo(x + size/4, y + size/2);
+    ctx.stroke();
+    
+    // Hand pointing
+    ctx.fillStyle = '#8B4513';
+    ctx.beginPath();
+    ctx.moveTo(x, y - size/4);
+    ctx.lineTo(x + size/6, y - size/2);
+    ctx.lineTo(x + size/3, y - size/4);
+    ctx.fill();
+  }
+  
+  function drawDrinkingMonkeysSymbol(ctx, x, y, size) {
+    // Lake
+    ctx.fillStyle = '#4682B4';
+    ctx.beginPath();
+    ctx.arc(x, y + size/4, size/3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Three monkeys with reeds
+    for (let i = -1; i <= 1; i++) {
+      const monkeyX = x + i * size/3;
+      drawSmallMonkeySymbol(ctx, monkeyX, y - size/4, size/4);
+      
+      // Reed
+      ctx.strokeStyle = '#228B22';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(monkeyX, y - size/4);
+      ctx.lineTo(monkeyX, y + size/4);
+      ctx.stroke();
+    }
+  }
+  
+  function drawFrustratedOgreSymbol(ctx, x, y, size) {
+    // Ogre face
+    ctx.fillStyle = '#CD5C5C';
+    ctx.beginPath();
+    ctx.arc(x, y, size/2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Angry eyes
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.moveTo(x - size/4, y - size/6);
+    ctx.lineTo(x - size/8, y - size/3);
+    ctx.lineTo(x - size/12, y - size/6);
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(x + size/4, y - size/6);
+    ctx.lineTo(x + size/8, y - size/3);
+    ctx.lineTo(x + size/12, y - size/6);
+    ctx.fill();
+    
+    // Angry mouth
+    ctx.strokeStyle = '#300';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(x, y + size/6, size/4, Math.PI, 2 * Math.PI);
+    ctx.stroke();
+  }
+  
+  function drawDepartingOgreSymbol(ctx, x, y, size) {
+    // Ogre body
+    ctx.fillStyle = '#CD5C5C';
+    ctx.beginPath();
+    ctx.arc(x - size/4, y, size/3, 0, Math.PI * 2); // Head
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.rect(x - size/2, y, size/2, size/2); // Body
+    ctx.fill();
+    
+    // Walking away lines
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x, y - size/6 + i * size/6);
+      ctx.lineTo(x + size/4, y - size/6 + i * size/6);
+      ctx.stroke();
+    }
+  }
+  
+  function drawBuddhaSymbol(ctx, x, y, size) {
+    // Seated figure
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(x, y - size/4, size/4, 0, Math.PI * 2); // Head
+    ctx.fill();
+    
+    // Robe
+    ctx.beginPath();
+    ctx.moveTo(x - size/2, y);
+    ctx.lineTo(x + size/2, y);
+    ctx.lineTo(x + size/3, y + size/2);
+    ctx.lineTo(x - size/3, y + size/2);
+    ctx.fill();
+    
+    // Halo
+    ctx.strokeStyle = '#FFA500';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(x, y - size/4, size/3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  
+  // Initial setup
+  let isDay = true;
+  let progress = 0;
+  
+  function updateLoadingScreen() {
+    progress += 1;
+    loadingProgress.style.width = `${progress}%`;
+    loadingText.textContent = `Loading: ${progress}%`;
+    
+    if (progress >= 100) {
+      loadingScreen.style.opacity = '0';
+      setTimeout(() => {
+        loadingScreen.style.display = 'none';
+        thorana.style.opacity = '1';
+        toggleDayNight();
+      }, 500);
+    } else {
+      setTimeout(updateLoadingScreen, 20);
+    }
+  }
+  
+  function toggleDayNight() {
+    if (isDay) {
+      skybox.classList.remove('day');
+      skybox.classList.add('night');
+      ambientDayLight.style.display = 'none';
+      ambientNightLight.style.display = 'block';
+      directionalDayLight.style.display = 'none';
+      directionalNightLight.style.display = 'block';
+      nightLights.style.opacity = '1';
+      kaviBanaDay.stop();
       kaviBanaNight.play();
     } else {
+      skybox.classList.remove('night');
+      skybox.classList.add('day');
+      ambientDayLight.style.display = 'block';
+      ambientNightLight.style.display = 'none';
+      directionalDayLight.style.display = 'block';
+      directionalNightLight.style.display = 'none';
+      nightLights.style.opacity = '0';
+      kaviBanaNight.stop();
       kaviBanaDay.play();
     }
+    isDay = !isDay;
   }
   
-  // Check if current time is night time (5 PM to 6 AM)
-  function isNightTime() {
-    const currentHour = new Date().getHours();
-    return currentHour >= 17 || currentHour < 6;
-  }
-  
-  // Update elements based on time of day
-  function updateTimeBasedElements() {
-    const isNight = isNightTime();
-    
-    // Update skybox
-    skybox.setAttribute('material', {
-      src: isNight ? '#sky-night' : '#sky-day'
-    });
-    
-    // Update lighting
-    ambientDayLight.setAttribute('visible', !isNight);
-    ambientNightLight.setAttribute('visible', isNight);
-    directionalDayLight.setAttribute('visible', !isNight);
-    directionalNightLight.setAttribute('visible', isNight);
-    
-    // Update thorana doors
-    if (isNight) {
-      openThoranaWithAnimation();
-      nightLights.setAttribute('visible', true);
-      jatakaPanels.setAttribute('visible', true);
-      
-      // Switch music if needed
-      if (!kaviBanaNight.playing()) {
-        kaviBanaDay.fade(0.5, 0, 1000);
-        setTimeout(() => {
-          kaviBanaDay.pause();
-          kaviBanaNight.play();
-        }, 1000);
-      }
-    } else {
-      closeThoranaWithAnimation();
-      nightLights.setAttribute('visible', false);
-      jatakaPanels.setAttribute('visible', false);
-      
-      // Switch music if needed
-      if (!kaviBanaDay.playing()) {
-        kaviBanaNight.fade(0.7, 0, 1000);
-        setTimeout(() => {
-          kaviBanaNight.pause();
-          kaviBanaDay.play();
-        }, 1000);
-      }
-    }
-  }
-  
-  // Open thorana with animation
-  function openThoranaWithAnimation() {
-    // Animate left door
-    leftDoor.setAttribute('animation', {
-      property: 'position',
-      to: '-4.5 5 0',
-      dur: 2000,
-      easing: 'easeOutQuad'
-    });
-    
-    // Animate right door
-    rightDoor.setAttribute('animation', {
-      property: 'position',
-      to: '4.5 5 0',
-      dur: 2000,
-      easing: 'easeOutQuad'
-    });
-  }
-  
-  // Close thorana with animation
-  function closeThoranaWithAnimation() {
-    // Animate left door
-    leftDoor.setAttribute('animation', {
-      property: 'position',
-      to: '-2.5 5 0',
-      dur: 2000,
-      easing: 'easeOutQuad'
-    });
-    
-    // Animate right door
-    rightDoor.setAttribute('animation', {
-      property: 'position',
-      to: '2.5 5 0',
-      dur: 2000,
-      easing: 'easeOutQuad'
-    });
-  }
-  
-  // Handle click events in the scene
-  function handleClick(event) {
+  // Event listeners
+  thorana.addEventListener('click', () => {
     clickSound.play();
-    
-    // Get the clicked element
-    const clickedEl = event.detail.intersectedEl;
-    
-    // Handle different interactions based on what was clicked
-    if (clickedEl.closest('#jataka-panels')) {
-      // Show more detailed information or animate the clicked panel
-      clickedEl.setAttribute('animation', {
-        property: 'scale',
-        to: '1.1 1.1 1.1',
-        dur: 300,
-        easing: 'easeOutQuad'
-      });
-      
-      setTimeout(() => {
-        clickedEl.setAttribute('animation', {
-          property: 'scale',
-          to: '1 1 1',
-          dur: 300,
-          easing: 'easeOutQuad'
-        });
-      }, 300);
-    } else if (clickedEl.closest('#thorana-structure')) {
-      // Toggle thorana state manually when clicked on structure
-      if (jatakaPanels.getAttribute('visible') === 'true') {
-        // Force close if open at night
-        closeThoranaWithAnimation();
-        jatakaPanels.setAttribute('visible', false);
-        
-        setTimeout(() => {
-          // But reopen after 5 seconds if it's night time
-          if (isNightTime()) {
-            openThoranaWithAnimation();
-            jatakaPanels.setAttribute('visible', true);
-          }
-        }, 5000);
-      } else if (isNightTime()) {
-        // Force open if closed at night
-        openThoranaWithAnimation();
-        jatakaPanels.setAttribute('visible', true);
-      }
-    }
-  }
-  
-  // Add window resize handler for responsive design
-  window.addEventListener('resize', function() {
-    // Adjust camera or other elements if needed
-  });
-
-  // Add immersive mode toggle for mobile
-  document.addEventListener('keydown', function(event) {
-    // 'F' key for fullscreen toggle
-    if (event.key === 'f' || event.key === 'F') {
-      toggleFullscreen();
-    }
+    toggleDayNight();
   });
   
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.log(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-  }
+  leftDoor.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clickSound.play();
+    leftDoor.classList.toggle('open');
+  });
   
-  // Add debug info to console
-  console.log("Digital Vesak Thorana - Nalapana Jataka");
-  console.log("Created by: Omindu Dissanayake");
-  console.log("Java Institute - Full Stack Engineer");
-  console.log(`Current time: ${new Date().toLocaleTimeString()}`);
-  console.log(`Thorana status: ${isNightTime() ? 'Open (Night Mode)' : 'Closed (Day Mode)'}`);
+  rightDoor.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clickSound.play();
+    rightDoor.classList.toggle('open');
+  });
+  
+  // Start loading
+  updateLoadingScreen();
 });
-
-// Add A-Frame component for animated glow effect on lights
-AFRAME.registerComponent('glow-effect', {
-  schema: {
-    intensity: {type: 'number', default: 0.5},
-    color: {type: 'color', default: '#FFF'},
-    speed: {type: 'number', default: 1}
-  },
-  
-  init: function() {
-    this.time = 0;
-    this.originalIntensity = this.data.intensity;
-  },
-  
-  tick: function(time, timeDelta) {
-    this.time += timeDelta / 1000 * this.data.speed;
-    
-    // Create pulsing effect
-    const pulseValue = Math.sin(this.time) * 0.2 + 0.8;
-    
-    // Apply to material
-    if (this.el.getAttribute('material')) {
-      this.el.setAttribute('material', 'emissiveIntensity', this.originalIntensity * pulseValue);
-    }
-    
-    // Apply to light if present
-    const light = this.el.querySelector('[light]');
-    if (light) {
-      light.setAttribute('light', 'intensity', this.originalIntensity * pulseValue);
-    }
-  }
-});
-
-// Add component for spinning animation on certain elements
-AFRAME.registerComponent('slow-spin', {
-  schema: {
-    speed: {type: 'number', default: 0.1}
-  },
-  
-  tick: function(time, timeDelta) {
-    // Get current rotation
-    const rotation = this.el.getAttribute('rotation');
-    
-    // Update Y rotation
-    rotation.y += this.data.speed * (timeDelta / 16);
-    
-    // Apply new rotation
-    this.el.setAttribute('rotation', rotation);
-  }
-});
-
-// Add custom shaders for enhanced visual effects
-AFRAME.registerShader('gradient-sky', {
-  schema: {
-    topColor: {type: 'color', default: '#1a3fb0'},
-    bottomColor: {type: 'color', default: '#0e175f'},
-    speed: {type: 'number', default: 0.001}
-  },
-  
-  vertexShader: `
-    varying vec2 vUV;
-    
-    void main() {
-      vUV = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  
-  fragmentShader: `
-    uniform vec3 topColor;
-    uniform vec3 bottomColor;
-    uniform float speed;
-    uniform float time;
-    varying vec2 vUV;
-    
-    void main() {
-      float h = vUV.y + sin(time * speed) * 0.1;
-      gl_FragColor = vec4(mix(bottomColor, topColor, h), 1.0);
-    }
-  `
-});
-
 
 
 
