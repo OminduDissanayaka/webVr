@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Buddhist Temple VR Experience - Vesak Poya Day</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+  <script>
+    AFRAME.registerComponent('time-controller', {
+      init: function() {
+        this.updateEnvironment();
+        // Update environment every minute
+        this.intervalId = setInterval(() => this.updateEnvironment(), 60000);
+      },
+      
+      updateEnvironment: function() {
+        const hour = new Date().getHours();
+        const scene = document.querySelector('a-scene');
+        const sky = document.querySelector('#sky');
+        const directionalLight = document.querySelector('#directional-light');
+        const ambientLight = document.querySelector('#ambient-light');
+        const vesak = document.querySelectorAll('.vesak-lantern');
+        const diyas = document.querySelectorAll('.diya');
+        const bodhi = document.querySelector('#bodhi-tree');
+        const fireflies = document.querySelectorAll('.firefly');
+        const devotees = document.querySelectorAll('.devotee');
+        
+        // Morning (5-11)
+        if (hour >= 5 && hour < 11) {
+          sky.setAttribute('material', 'color', '#87CEEB');
+          directionalLight.setAttribute('light', {
+            castShadow: true,
+            intensity: 0.8,
+            color: '#FFF5BD'
+          });
+          ambientLight.setAttribute('light', {
+            type: 'ambient',
+            color: '#FFF5BD',
+            intensity: 0.4
+          });
+          
+          // Hide lantern glow at day
+          vesak.forEach(lantern => {
+            const glow = lantern.querySelector('.lantern-glow');
+            if (glow) glow.setAttribute('visible', false);
+          });
+          
+          // Hide diya flame in day
+          diyas.forEach(diya => {
+            const flame = diya.querySelector('.flame');
+            if (flame) flame.setAttribute('visible', false);
+          });
+          
+          // Show more devotees in morning
+          devotees.forEach(devotee => {
+            devotee.setAttribute('visible', true);
+          });
+          
+          // Hide fireflies during day
+          fireflies.forEach(firefly => {
+            firefly.setAttribute('visible', false);
+          });
+          
+          // Play morning sounds
+          this.playAudioGroup('morning');
+        }
+        // Afternoon (11-17)
+        else if (hour >= 11 && hour < 17) {
+          sky.setAttribute('material', 'color', '#5D9FFF');
+          directionalLight.setAttribute('light', {
+            castShadow: true,
+            intensity: 1.0,
+            color: '#FFFFFF'
+          });
+          ambientLight.setAttribute('light', {
+            type: 'ambient',
+            color: '#FFFFFF',
+            intensity: 0.5
+          });
+          
+          // Hide lantern glow
+          vesak.forEach(lantern => {
+            const glow = lantern.querySelector('.lantern-glow');
+            if (glow) glow.setAttribute('visible', false);
+          });
+          
+          // Hide diya flame in day
+          diyas.forEach(diya => {
+            const flame = diya.querySelector('.flame');
+            if (flame) flame.setAttribute('visible', false);
+          });
+          
+          // Show all devotees in afternoon
+          devotees.forEach(devotee => {
+            devotee.setAttribute('visible', true);
+          });
+          
+          // Hide fireflies during day
+          fireflies.forEach(firefly => {
+            firefly.setAttribute('visible', false);
+          });
+          
+          // Play afternoon sounds
+          this.playAudioGroup('afternoon');
+        }
+        // Evening/Night (17-5)
+        else {
+          sky.setAttribute('material', 'color', '#051437');
+          directionalLight.setAttribute('light', {
+            castShadow: true,
+            intensity: 0.1,
+            color: '#CCCCFF'
+          });
+          ambientLight.setAttribute('light', {
+            type: 'ambient',
+            color: '#334455',
+            intensity: 0.2
+          });
+          
+          // Show lantern glow at night
+          vesak.forEach(lantern => {
+            const glow = lantern.querySelector('.lantern-glow');
+            if (glow) glow.setAttribute('visible', true);
+          });
+          
+          // Show diya flame at night
+          diyas.forEach(diya => {
+            const flame = diya.querySelector('.flame');
+            if (flame) flame.setAttribute('visible', true);
+          });
+          
+          // Show fewer devotees at night
+          devotees.forEach((devotee, index) => {
+            devotee.setAttribute('visible', index % 3 === 0);
+          });
+          
+          // Show fireflies at night
+          fireflies.forEach(firefly => {
+            firefly.setAttribute('visible', true);
+          });
+          
+          // Play night sounds
+          this.playAudioGroup('night');
+        }
+      },
+      
+      playAudioGroup: function(timeOfDay) {
+        // Stop all currently playing sounds
+        if (this.currentSounds) {
+          Object.values(this.currentSounds).forEach(sound => {
+            if (sound && sound.playing) sound.stop();
+          });
+        }
+        
+        // Initialize sound objects if first time
+        if (!this.sounds) {
+          this.sounds = {
+            morning: {
+              birds: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.3
+              }),
+              monks_morning: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.4
+              })
+            },
+            afternoon: {
+              footsteps: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.2
+              }),
+              temple_bells: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.3
+              })
+            },
+            night: {
+              crickets: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.2
+              }),
+              distant_chanting: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.25
+              }),
+              oil_lamps: new Howl({
+                src: ['/api/placeholder/400/320'],
+                loop: true,
+                volume: 0.1
+              })
+            }
+          };
+        }
+        
+        // Play new set of sounds based on time of day
+        this.currentSounds = this.sounds[timeOfDay];
+        Object.values(this.currentSounds).forEach(sound => {
+          sound.play();
+        });
+      },
+      
+      remove: function() {
+        // Clean up interval when component is removed
+        if (this.intervalId) {
+          clearInterval(this.intervalId);
+        }
+        
+        // Stop all sounds
+        if (this.sounds) {
+          Object.keys(this.sounds).forEach(timeKey => {
+            Object.values(this.sounds[timeKey]).forEach(sound => {
+              if (sound && sound.playing) sound.stop();
+            });
+          });
+        }
+      }
+    });
+    
+    AFRAME.registerComponent('clickable', {
+      schema: {
+        type: {type: 'string', default: 'default'},
+        gatha: {type: 'string', default: ''},
+        sound: {type: 'string', default: ''}
+      },
+      
+      init: function() {
+        const el = this.el;
+        const data = this.data;
+        
+        this.onClick = this.onClick.bind(this);
+        el.addEventListener('click', this.onClick);
+        
+        // Initialize sound if needed
+        if (data.sound) {
+          this.sound = new Howl({
+            src: ['/api/placeholder/400/320'],
+            volume: 0.5
+          });
+        }
+        
+        // Create popup text entity for gatha
+        if (data.gatha) {
+          this.textEntity = document.createElement('a-entity');
+          this.textEntity.setAttribute('text', {
+            value: data.gatha,
+            color: 'white',
+            width: 2,
+            align: 'center'
+          });
+          this.textEntity.setAttribute('position', {x: 0, y: 0.5, z: 0});
+          this.textEntity.setAttribute('visible', false);
+          
+          // Add background panel
+          this.panelEntity = document.createElement('a-entity');
+          this.panelEntity.setAttribute('geometry', {
+            primitive: 'plane',
+            width: 2.2,
+            height: 1
+          });
+          this.panelEntity.setAttribute('material', {
+            color: 'black',
+            opacity: 0.7
+          });
+          this.panelEntity.setAttribute('position', {x: 0, y: 0.5, z: -0.01});
+          this.panelEntity.setAttribute('visible', false);
+          
+          el.appendChild(this.panelEntity);
+          el.appendChild(this.textEntity);
+        }
+      },
+      
+      onClick: function() {
+        const data = this.data;
+        
+        switch(data.type) {
+          case 'stupa':
+            // Show gatha
+            if (this.textEntity && this.panelEntity) {
+              this.textEntity.setAttribute('visible', true);
+              this.panelEntity.setAttribute('visible', true);
+              
+              // Hide after 10 seconds
+              setTimeout(() => {
+                this.textEntity.setAttribute('visible', false);
+                this.panelEntity.setAttribute('visible', false);
+              }, 10000);
+            }
+            
+            // Play sound
+            if (this.sound) {
+              this.sound.play();
+            }
+            break;
+            
+          case 'bodhi-tree':
+            // Animate leaves falling
+            const leaves = document.querySelectorAll('.bodhi-leaf');
+            leaves.forEach(leaf => {
+              // Generate random fall animation
+              const randomX = (Math.random() * 2 - 1).toFixed(2);
+              const randomZ = (Math.random() * 2 - 1).toFixed(2);
+              const randomDelay = (Math.random() * 2).toFixed(2);
+              
+              leaf.setAttribute('animation', {
+                property: 'position',
+                to: `${randomX} 0 ${randomZ}`,
+                dur: 3000,
+                easing: 'easeInQuad',
+                delay: randomDelay * 1000
+              });
+              
+              // Reset position after animation
+              setTimeout(() => {
+                leaf.removeAttribute('animation');
+                leaf.setAttribute('position', leaf.dataset.originalPos);
+              }, 5000);
+            });
+            
+            // Show gatha
+            if (this.textEntity && this.panelEntity) {
+              this.textEntity.setAttribute('visible', true);
+              this.panelEntity.setAttribute('visible', true);
+              
+              setTimeout(() => {
+                this.textEntity.setAttribute('visible', false);
+                this.panelEntity.setAttribute('visible', false);
+              }, 10000);
+            }
+            
+            // Play sound
+            if (this.sound) {
+              this.sound.play();
+            }
+            break;
+            
+          case 'buddha-statue':
+            // Show gatha
+            if (this.textEntity && this.panelEntity) {
+              this.textEntity.setAttribute('visible', true);
+              this.panelEntity.setAttribute('visible', true);
+              
+              setTimeout(() => {
+                this.textEntity.setAttribute('visible', false);
+                this.panelEntity.setAttribute('visible', false);
+              }, 10000);
+            }
+            
+            // Play sound
+            if (this.sound) {
+              this.sound.play();
+            }
+            break;
+            
+          case 'diya':
+            // Light the oil lamp
+            const flame = this.el.querySelector('.flame');
+            if (flame) {
+              flame.setAttribute('visible', true);
+              
+              // Add light to flame
+              const flameLight = document.createElement('a-entity');
+              flameLight.setAttribute('light', {
+                type: 'point',
+                color: '#FFAA33',
+                intensity: 0.5,
+                distance: 2
+              });
+              flame.appendChild(flameLight);
+              
+              // Animate flame
+              flame.setAttribute('animation', {
+                property: 'scale',
+                from: '1 1 1',
+                to: '1.1 1.2 1.1',
+                dir: 'alternate',
+                dur: 500,
+                loop: true,
+                easing: 'easeInOutSine'
+              });
+            }
+            break;
+            
+          case 'vesak-lantern':
+            // Make lantern float up
+            this.el.setAttribute('animation', {
+              property: 'position',
+              to: '0 5 0',
+              dur: 10000,
+              easing: 'easeInOutSine'
+            });
+            
+            // Add gentle rotation
+            this.el.setAttribute('animation__rotate', {
+              property: 'rotation',
+              to: '0 360 0',
+              dur: 30000,
+              loop: true,
+              easing: 'linear'
+            });
+            break;
+            
+          case 'monk-quarters':
+            // Play dhamma sermon
+            if (!this.dharmaSound) {
+              this.dharmaSound = new Howl({
+                src: ['/api/placeholder/400/320'],
+                volume: 0.6
+              });
+            }
+            this.dharmaSound.play();
+            
+            // Show subtitle text temporarily
+            if (!this.dharmaText) {
+              this.dharmaText = document.createElement('a-entity');
+              this.dharmaText.setAttribute('text', {
+                value: "Dhamma is like a raft. It's purpose is to take you across, not to carry with you.",
+                color: 'white',
+                width: 3,
+                align: 'center'
+              });
+              this.dharmaText.setAttribute('position', {x: 0, y: 2, z: 0});
+              this.dharmaText.setAttribute('visible', false);
+              
+              this.dharmaPanel = document.createElement('a-entity');
+              this.dharmaPanel.setAttribute('geometry', {
+                primitive: 'plane',
+                width: 3.2,
+                height: 0.8
+              });
+              this.dharmaPanel.setAttribute('material', {
+                color: 'black',
+                opacity: 0.7
+              });
+              this.dharmaPanel.setAttribute('position', {x: 0, y: 2, z: -0.01});
+              this.dharmaPanel.setAttribute('visible', false);
+              
+              this.el.appendChild(this.dharmaPanel);
+              this.el.appendChild(this.dharmaText);
+            }
+            
+            this.dharmaText.setAttribute('visible', true);
+            this.dharmaPanel.setAttribute('visible', true);
+            
+            setTimeout(() => {
+              this.dharmaText.setAttribute('visible', false);
+              this.dharmaPanel.setAttribute('visible', false);
+            }, 15000);
+            break;
+        }
+      },
+      
+      remove: function() {
+        this.el.removeEventListener('click', this.onClick);
+        
+        // Clean up sounds
+        if (this.sound && this.sound.playing) {
+          this.sound.stop();
+        }
+        if (this.dharmaSound && this.dharmaSound.playing) {
+          this.dharmaSound.stop();
+        }
+      }
+    });
+
+    // Leaf animation system
+    AFRAME.registerComponent('bodhi-leaf', {
+      init: function() {
+        // Store original position for reset
+        const position = this.el.getAttribute('position');
+        this.el.dataset.originalPos = `${position.x} ${position.y} ${position.z}`;
+        
+        // Random gentle swaying
+        const randomDuration = 2000 + Math.random() * 1000;
+        this.el.setAttribute('animation', {
+          property: 'rotation',
+          from: '0 0 0',
+          to: `${Math.random() * 5} ${Math.random() * 10} ${Math.random() * 5}`,
+          dir: 'alternate',
+          dur: randomDuration,
+          loop: true,
+          easing: 'easeInOutSine'
+        });
+      }
+    });
+
+    // Firefly animation
+    AFRAME.registerComponent('firefly', {
+      init: function() {
+        // Random movement
+        this.setRandomMovement();
+        
+        // Pulsing light
+        this.el.setAttribute('animation__pulse', {
+          property: 'light.intensity',
+          from: '0.3',
+          to: '0.6',
+          dir: 'alternate',
+          dur: 1000 + Math.random() * 1000,
+          loop: true,
+          easing: 'easeInOutSine'
+        });
+      },
+      
+      setRandomMovement: function() {
+        const pos = this.el.getAttribute('position');
+        const randomX = pos.x + (Math.random() * 4 - 2);
+        const randomY = pos.y + (Math.random() * 2 - 0.5);
+        const randomZ = pos.z + (Math.random() * 4 - 2);
+        
+        this.el.setAttribute('animation__move', {
+          property: 'position',
+          to: `${randomX} ${randomY} ${randomZ}`,
+          dur: 8000 + Math.random() * 5000,
+          easing: 'easeInOutSine',
+          complete: () => this.setRandomMovement()
+        });
+      }
+    });
+
+    // Define walk-path component for user navigation
+    AFRAME.registerComponent('walk-path', {
+      schema: {
+        points: {type: 'array', default: []}
+      },
+      
+      init: function() {
+        this.currentPointIndex = 0;
+        this.isWalking = false;
+        
+        // Create path markers
+        this.createPathMarkers();
+        
+        // Listen for path marker clicks
+        this.el.sceneEl.addEventListener('markerclick', this.onMarkerClick.bind(this));
+      },
+      
+      createPathMarkers: function() {
+        const data = this.data;
+        const points = data.points;
+        
+        points.forEach((point, index) => {
+          // Create marker
+          const marker = document.createElement('a-entity');
+          marker.setAttribute('geometry', {
+            primitive: 'cylinder',
+            radius: 0.5,
+            height: 0.1
+          });
+          marker.setAttribute('material', {
+            color: '#aaffaa',
+            opacity: 0.5,
+            transparent: true
+          });
+          marker.setAttribute('position', point);
+          marker.setAttribute('data-index', index);
+          marker.setAttribute('class', 'path-marker');
+          
+          // Add text label
+          const label = document.createElement('a-entity');
+          let locationName = "";
+          
+          // Set name based on index/location
+          switch(index) {
+            case 0: locationName = "Start"; break;
+            case 1: locationName = "Chaitya/Stupa"; break;
+            case 2: locationName = "Bodhi Tree"; break;
+            case 3: locationName = "Image House"; break;
+            case 4: locationName = "Dharma Hall"; break;
+            default: locationName = `Point ${index + 1}`; 
+          }
+          
+          label.setAttribute('text', {
+            value: locationName,
+            align: 'center',
+            width: 3
+          });
+          label.setAttribute('position', {x: 0, y: 0.2, z: 0});
+          marker.appendChild(label);
+          
+          // Make clickable
+          marker.addEventListener('click', () => {
+            this.el.sceneEl.emit('markerclick', {index: index, position: point});
+          });
+          
+          this.el.sceneEl.appendChild(marker);
+        });
+      },
+      
+      onMarkerClick: function(event) {
+        const camera = document.querySelector('[camera]').parentNode;
+        const targetPosition = event.detail.position;
+        const index = event.detail.index;
+        
+        // If already at this point, don't move
+        if (this.currentPointIndex === index) return;
+        
+        // Move camera to new position
+        camera.setAttribute('animation', {
+          property: 'position',
+          to: `${targetPosition.x} 1.6 ${targetPosition.z}`,
+          dur: 2000,
+          easing: 'easeInOutQuad'
+        });
+        
+        this.currentPointIndex = index;
+        
+        // Trigger location-specific events
+        switch(index) {
+          case 1: // Chaitya/Stupa
+            setTimeout(() => {
+              document.querySelector('#stupa').dispatchEvent(new Event('click'));
+            }, 2500);
+            break;
+          case 2: // Bodhi Tree
+            setTimeout(() => {
+              document.querySelector('#bodhi-tree').dispatchEvent(new Event('click'));
+            }, 2500);
+            break;
+          case 3: // Image House
+            setTimeout(() => {
+              document.querySelector('#buddha-statue').dispatchEvent(new Event('click'));
+            }, 2500);
+            break;
+          case 4: // Dharma Hall
+            setTimeout(() => {
+              document.querySelector('#monk-quarters').dispatchEvent(new Event('click'));
+            }, 2500);
+            break;
+        }
+      }
+    });
+  </script>
+  <style>
+    .instructions {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      font-family: Arial, sans-serif;
+      z-index: 999;
+      width: 80%;
+      max-width: 600px;
+      text-align: center;
+    }
+    .instructions h2 {
+      margin-top: 0;
+      color: #ffcc66;
+    }
+    .instructions p {
+      margin-bottom: 10px;
+    }
+    .instructions ul {
+      text-align: left;
+      margin: 0;
+      padding-left: 20px;
+    }
+    .instructions .button {
+      background-color: #ffcc66;
+      color: black;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Instructions overlay -->
+  <div class="instructions">
+    <h2>Buddhist Temple VR - Vesak Poya Day</h2>
+    <p>Welcome to this immersive experience of a Buddhist temple during Vesak celebrations.</p>
+    <p>Instructions:</p>
+    <ul>
+      <li>Click and drag to look around</li>
+      <li>Click the green circles to move along the sacred path</li>
+      <li>Interact with glowing objects (stupa, Bodhi tree, Buddha statue)</li>
+      <li>Experience changes based on your local time (morning/day/night)</li>
+    </ul>
+    <button class="button" onclick="this.parentElement.style.display='none'">Begin Journey</button>
+  </div>
+
+  <a-scene vr-mode-ui="enabled: true">
+    <!-- Assets -->
+    <a-assets>
+      <img id="ground-texture" src="/api/placeholder/400/320" />
+      <img id="stupa-texture" src="/api/placeholder/400/320" />
+      <img id="buddha-texture" src="/api/placeholder/400/320" />
+      <img id="wood-texture" src="/api/placeholder/400/320" />
+      <img id="leaf-texture" src="/api/placeholder/400/320" />
+      <img id="lantern-texture" src="/api/placeholder/400/320" />
+    </a-assets>
+    
+    <!-- Environment -->
+    <a-entity time-controller></a-entity>
+    <a-sky id="sky" color="#87CEEB"></a-sky>
+    
+    <!-- Lighting -->
+    <a-entity id="directional-light" light="type: directional; color: #FFF5BD; intensity: 0.8; castShadow: true" position="0 5 1"></a-entity>
+    <a-entity id="ambient-light" light="type: ambient; color: #FFF5BD; intensity: 0.4"></a-entity>
+    <a-moon phase="0.8" position="20 30 -100" radius="10" rotation="0 0 0" material="shader: flat; color: #FFFFFF; opacity: 0.8"></a-moon>
+    
+    <!-- Ground -->
+    <a-entity geometry="primitive: plane; width: 100; height: 100" material="src: #ground-texture; repeat: 20 20" rotation="-90 0 0" position="0 0 0"></a-entity>
+    
+    <!-- Stupa (Chaitya) -->
+    <a-entity id="stupa" position="0 0 -15" clickable="type: stupa; gatha: 'Aniccā vata saṅkhārā, uppādavayadhammino. Uppajjitvā nirujjhanti, tesaṃ vūpasamo sukho'">
+      <!-- Base -->
+      <a-cylinder color="white" height="1" radius="5" segments-radial="36" position="0 0.5 0"></a-cylinder>
+      <!-- Middle section -->
+      <a-cylinder color="white" height="5" radius="3" segments-radial="36" position="0 3.5 0"></a-cylinder>
+      <!-- Dome -->
+      <a-sphere color="white" radius="4" segments-width="36" segments-height="36" position="0 8 0" scale="1 0.8 1"></a-sphere>
+      <!-- Top spire -->
+      <a-cylinder color="gold" height="3" radius="0.3" segments-radial="12" position="0 11 0"></a-cylinder>
+      <!-- Very top ornament -->
+      <a-sphere color="gold" radius="0.5" position="0 12.5 0"></a-sphere>
+      <!-- Night glow -->
+      <a-sphere class="lantern-glow" radius="4.2" material="color: #FFDD88; opacity: 0.2; transparent: true" position="0 8 0" scale="1 0.8 1" visible="false"></a-sphere>
+    </a-entity>
+    
+    <!-- Bodhi Tree -->
+    <a-entity id="bodhi-tree" position="15 0 0" clickable="type: bodhi-tree; gatha: 'Buddhaṃ saraṇaṃ gacchāmi, Dhammaṃ saraṇaṃ gacchāmi, Saṅghaṃ saraṇaṃ gacchāmi'">
+      <!-- Trunk -->
+      <a-cylinder color="#8B4513" height="8" radius="0.7" segments-radial="12" position="0 4 0"></a-cylinder>
+      <!-- Branches -->
+      <a-entity position="0 7 0">
+        <!-- Main branch structure -->
+        <a-cylinder color="#8B4513" height="5" radius="0.4" rotation="0 0 60" position="2 1 0"></a-cylinder>
+        <a-cylinder color="#8B4513" height="4" radius="0.4" rotation="0 0 -60" position="-2 1 0"></a-cylinder>
+        <a-cylinder color="#8B4513" height="4" radius="0.4" rotation="60 0 0" position="0 1 2"></a-cylinder>
+        <a-cylinder color="#8B4513" height="4" radius="0.4" rotation="-60 0 0" position="0 1 -2"></a-cylinder>
+        
+        <!-- Leaves -->
+        <a-entity position="0 3 0">
+          <!-- First layer of leaves -->
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="2 2 0" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="-2 2 0" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="0 2 2" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="0 2 -2" bodhi-leaf></a-entity>
+          
+          <!-- Second layer of leaves -->
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="3 1 1" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="-3 1 1" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="1 1 3" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="1 1 -3" bodhi-leaf></a-entity>
+          
+          <!-- More leaves -->
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="2.5 0 2.5" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="-2.5 0 2.5" bodhi-leaf></a-entity>
+          <a-entity class="bodhi-leaf" geometry="primitive: plane; width: 1; height: 1.3" material="src: #leaf-texture; transparent: true; side: double" position="-2.5 0 -2.5" bodhi-leaf></a-entity>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Hanging lamps -->
+      <a-entity class="vesak-lantern" position="3 6 0">
+        <a-sphere color="#DD8866" radius="0.3" position="0 0 0"></a-sphere>
+        <a-sphere class="lantern-glow" radius="0.5" material="color: #FFDD88; opacity: 0.5; transparent: true" position="0 0 0" visible="false"></a-sphere>
+      </a-entity>
+      <a-entity class="vesak-lantern" position="-3 6 0">
+        <a-sphere color="#DD8866" radius="0.3" position="0 0 0"></a-sphere>
+        <a-sphere class="lantern-glow" radius="0.5" material="color: #FFDD88; opacity: 0.5; transparent: true" position="0 0 0" visible="false"></a-sphere>
+      </a-entity>
+      <a-entity class="vesak-lantern" position="0 6 3">
+        <a-sphere color="#DD8866" radius="0.3" position="0 0 0"></a-sphere>
+        <a-sphere class="lantern-glow" radius="0.5" material="color: #FFDD88; opacity: 0.5; transparent: true" position="0 0 0" visible="false"></a-sphere>
+      </a-entity>
+      <a-entity class="vesak-lantern" position="0 6 -3">
+        <a-sphere color="#DD8866" radius="0.3" position="0 0 0"></a-sphere>
+        <a-sphere class="lantern-glow" radius="0.5" material="color: #FFDD88; opacity: 0.5; transparent: true" position="0 0 0" visible="false"></a-sphere>
+      </a-entity>
+      
+      <!-- Base with flowers -->
+      <a-cylinder color="#8B4513" height="0.5" radius="2" segments-radial="12" position="0 0.25 0"></a-cylinder>
+      <a-entity position="1.5 0.5 0">
+        <a-sphere color="#FF88FF" radius="0.2" position="0 0 0"></a-sphere>
+        <a-sphere color="#FFFF88" radius="0.05" position="0 0.1 0"></a-sphere>
+      </a-entity>
+      <a-entity position="-1.5 0.5 0">
+        <a-sphere color="#FF88FF" radius="0.2" position="0 0 0"></a-sphere>
+        <a-sphere color="#FFFF88" radius="0.05" position="0 0.1 0"></a-sphere>
+      </a-entity>
+      <a-entity position="0 0.5 1.5">
+        <a-sphere color="#FF88FF" radius="0.2" position="0 0 0"></a-sphere>
+        <a-sphere color="#FFFF88" radius="0.05" position="0 0.1 0"></a-sphere>
+      </a-entity>
+      <a-entity position="0 0.5 -1.5">
+        <a-sphere color="#FF88FF" radius="0.2" position="0 0 0"></a-sphere>
+        <a-sphere color="#FFFF88" radius="0.05" position="0 0.1 0"></a-sphere>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Image House (Pilima Ge) -->
+    <a-entity position="-15 0 0">
+      <!-- Main structure -->
+      <a-box color="#D2B48C" width="12" height="5" depth="8" position="0 2.5 0"></a-box>
+      <!-- Roof -->
+      <a-entity position="0 5 0">
+        <a-box color="#8B4513" width="14" height="0.5" depth="10" position="0 0 0"></a-box>
+        <a-entity position="0 0.25 0">
+          <a-box color="#8B0000" width="14" height="3" depth="10" position="0 1.5 0" scale="1 1 1" geometry="primitive: box; width: 14; height: 3; depth: 10" material="color: #8B0000">
+            <a-animation attribute="scale" from="1 1 1" to="1 1 1" direction="alternate" dur="1000" repeat="indefinite"></a-animation>
+          </a-box>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Entrance -->
+      <a-entity position="0 0 4">
+        <a-box color="#8B4513" width="3" height="4" depth="0.5" position="0 2 0"></a-box>
+        <a-plane color="black" width="2" height="3" position="0 1.5 0.3"></a-plane>
+      </a-entity>
+      
+      <!-- Buddha statue -->
+      <a-entity id="buddha-statue" position="0 0 -2" clickable="type: buddha-statue; gatha: 'Namo tassa bhagavato arahato sammā-sambuddhassa'">
+        <a-entity position="0 2.5 0">
+          <!-- Base -->
+          <a-box color="gold" width="3" height="0.5" depth="2" position="0 -2 0"></a-box>
+          <!-- Body -->
+          <a-box color="gold" width="2" height="2" depth="1" position="0 -0.5 0"></a-box>
+          <!-- Head -->
+          <a-sphere color="gold" radius="0.5" position="0 0.5 0"></a-sphere>
+          <!-- Glowing aura -->
+          <a-sphere class="lantern-glow" radius="2" material="color: #FFDD88; opacity: 0.2; transparent: true" position="0 0 0" visible="false"></a-sphere>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Offerings -->
+      <a-entity position="0 0.5 -3.5">
+        <!-- Offering table -->
+        <a-box color="#8B4513" width="5" height="1" depth="1" position="0 0 0"></a-box>
+        
+        <!-- Flowers -->
+        <a-entity position="-1.5 0.5 0">
+          <a-cylinder color="#006400" height="0.3" radius="0.1" position="0 0 0"></a-cylinder>
+          <a-cone color="#FF69B4" height="0.3" radius-bottom="0.2" radius-top="0" position="0 0.3 0"></a-cone>
+        </a-entity>
+        <a-entity position="1.5 0.5 0">
+          <a-cylinder color="#006400" height="0.3" radius="0.1" position="0 0 0"></a-cylinder>
+          <a-cone color="#FF69B4" height="0.3" radius-bottom="0.2" radius-top="0" position="0 0.3 0"></a-cone>
+        </a-entity>
+        
+        <!-- Oil lamps -->
+        <a-entity class="diya" position="-0.5 0.5 0" clickable="type: diya">
+          <a-cylinder color="#CD853F" height="0.1" radius="0.15" position="0 0 0"></a-cylinder>
+          <a-entity class="flame" visible="false">
+            <a-cone color="#FFFF00" height="0.2" radius-bottom="0.05" radius-top="0" position="0 0.1 0"></a-cone>
+          </a-entity>
+        </a-entity>
+        <a-entity class="diya" position="0.5 0.5 0" clickable="type: diya">
+          <a-cylinder color="#CD853F" height="0.1" radius="0.15" position="0 0 0"></a-cylinder>
+          <a-entity class="flame" visible="false">
+            <a-cone color="#FFFF00" height="0.2" radius-bottom="0.05" radius-top="0" position="0 0.1 0"></a-cone>
+          </a-entity>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Dhamma Hall -->
+    <a-entity position="0 0 15">
+      <!-- Main structure -->
+      <a-box color="#D2B48C" width="15" height="4" depth="10" position="0 2 0"></a-box>
+      <!-- Roof -->
+      <a-entity position="0 4 0">
+        <a-box color="#8B4513" width="17" height="0.5" depth="12" position="0 0 0"></a-box>
+        <a-entity position="0 0.25 0">
+          <a-box color="#8B0000" width="17" height="3" depth="12" position="0 1.5 0" scale="1 1 1"></a-box>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Entrance -->
+      <a-entity position="0 0 5">
+        <a-box color="#8B4513" width="3" height="3" depth="0.5" position="0 1.5 0"></a-box>
+        <a-plane color="black" width="2" height="2" position="0 1.5 0.3"></a-plane>
+      </a-entity>
+      
+      <!-- Windows -->
+      <a-entity position="-6 2 0">
+        <a-plane color="skyblue" width="1.5" height="1.5" position="0 0 5.1"></a-plane>
+        <a-plane color="skyblue" width="1.5" height="1.5" position="0 0 -5.1"></a-plane>
+      </a-entity>
+      <a-entity position="6 2 0">
+        <a-plane color="skyblue" width="1.5" height="1.5" position="0 0 5.1"></a-plane>
+        <a-plane color="skyblue" width="1.5" height="1.5" position="0 0 -5.1"></a-plane>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Monk Quarters -->
+    <a-entity id="monk-quarters" position="15 0 15" clickable="type: monk-quarters">
+      <!-- Main structure -->
+      <a-box color="#D2B48C" width="8" height="3" depth="6" position="0 1.5 0"></a-box>
+      <!-- Roof -->
+      <a-entity position="0 3 0">
+        <a-box color="#8B4513" width="10" height="0.5" depth="8" position="0 0 0"></a-box>
+        <a-entity position="0 0.25 0">
+          <a-box color="#8B0000" width="10" height="2" depth="8" position="0 1 0"></a-box>
+        </a-entity>
+      </a-entity>
+      
+      <!-- Door -->
+      <a-entity position="0 0 3">
+        <a-box color="#8B4513" width="2" height="2.5" depth="0.5" position="0 1.25 0"></a-box>
+        <a-plane color="black" width="1.5" height="2" position="0 1.25 0.3"></a-plane>
+      </a-entity>
+      
+      <!-- Windows -->
+      <a-entity position="-3 1.5 0">
+        <a-plane color="skyblue" width="1" height="1" position="0 0 3.1"></a-plane>
+        <a-plane color="skyblue" width="1" height="1" position="0 0 -3.1"></a-plane>
+      </a-entity>
+      <a-entity position="3 1.5 0">
+        <a-plane color="skyblue" width="1" height="1" position="0 0 3.1"></a-plane>
+        <a-plane color="skyblue" width="1" height="1" position="0 0 -3.1"></a-plane>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Bell Tower -->
+    <a-entity position="-15 0 15">
+      <!-- Tower structure -->
+      <a-entity position="0 0 0">
+        <!-- Posts -->
+        <a-box color="#8B4513" width="0.5" height="6" depth="0.5" position="-2 3 -2"></a-box>
+        <a-box color="#8B4513" width="0.5" height="6" depth="0.5" position="2 3 -2"></a-box>
+        <a-box color="#8B4513" width="0.5" height="6" depth="0.5" position="-2 3 2"></a-box>
+        <a-box color="#8B4513" width="0.5" height="6" depth="0.5" position="2 3 2"></a-box>
+        
+        <!-- Cross beams -->
+        <a-box color="#8B4513" width="5" height="0.5" depth="0.5" position="0 5.5 -2"></a-box>
+        <a-box color="#8B4513" width="5" height="0.5" depth="0.5" position="0 5.5 2"></a-box>
+        <a-box color="#8B4513" width="0.5" height="0.5" depth="5" position="-2 5.5 0"></a-box>
+        <a-box color="#8B4513" width="0.5" height="0.5" depth="5" position="2 5.5 0"></a-box>
+        
+        <!-- Roof -->
+        <a-entity position="0 6 0">
+          <a-box color="#8B0000" width="6" height="0.5" depth="6" position="0 0 0"></a-box>
+          <a-cone color="#8B0000" radius-bottom="3" radius-top="0" height="3" position="0 1.5 0" segments-radial="4" rotation="0 45 0"></a-cone>
+        </a-entity>
+        
+        <!-- Bell -->
+        <a-entity position="0 4 0">
+          <a-cone color="#CD853F" radius-bottom="1" radius-top="0.5" height="1.5" position="0 0 0" open-ended="true"></a-cone>
+          <a-sphere color="#CD853F" radius="0.2" position="0 -0.9 0"></a-sphere>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Water with floating diyas -->
+    <a-entity position="0 0 -30">
+      <!-- Water -->
+      <a-plane color="#4682B4" width="20" height="10" rotation="-90 0 0" position="0 0.1 0" material="opacity: 0.8; transparent: true"></a-plane>
+      
+      <!-- Floating diyas -->
+      <a-entity class="diya" position="-3 0.2 -3" animation="property: position; to: -2.8 0.2 -3.2; dir: alternate; dur: 3000; easing: easeInOutSine; loop: true" clickable="type: diya">
+        <a-cylinder color="#CD853F" height="0.1" radius="0.15" position="0 0 0"></a-cylinder>
+        <a-entity class="flame" visible="false">
+          <a-cone color="#FFFF00" height="0.2" radius-bottom="0.05" radius-top="0" position="0 0.1 0"></a-cone>
+        </a-entity>
+      </a-entity>
+      
+      <a-entity class="diya" position="0 0.2 0" animation="property: position; to: 0.2 0.2 0.2; dir: alternate; dur: 4000; easing: easeInOutSine; loop: true" clickable="type: diya">
+        <a-cylinder color="#CD853F" height="0.1" radius="0.15" position="0 0 0"></a-cylinder>
+        <a-entity class="flame" visible="false">
+          <a-cone color="#FFFF00" height="0.2" radius-bottom="0.05" radius-top="0" position="0 0.1 0"></a-cone>
+        </a-entity>
+      </a-entity>
+      
+      <a-entity class="diya" position="3 0.2 3" animation="property: position; to: 2.8 0.2 3.2; dir: alternate; dur: 3500; easing: easeInOutSine; loop: true" clickable="type: diya">
+        <a-cylinder color="#CD853F" height="0.1" radius="0.15" position="0 0 0"></a-cylinder>
+        <a-entity class="flame" visible="false">
+          <a-cone color="#FFFF00" height="0.2" radius-bottom="0.05" radius-top="0" position="0 0.1 0"></a-cone>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Vesak Lanterns scattered around -->
+    <a-entity class="vesak-lantern" position="5 2 10" clickable="type: vesak-lantern">
+      <a-box color="#FF6347" width="0.8" height="1.2" depth="0.8" position="0 0 0"></a-box>
+      <a-sphere class="lantern-glow" radius="1.5" material="color: #FF6347; opacity: 0.2; transparent: true" position="0 0 0" visible="false"></a-sphere>
+    </a-entity>
+    
+    <a-entity class="vesak-lantern" position="-8 2 5" clickable="type: vesak-lantern">
+      <a-cylinder color="#4682B4" height="1.5" radius="0.5" segments-radial="6" position="0 0 0"></a-cylinder>
+      <a-sphere class="lantern-glow" radius="1" material="color: #4682B4; opacity: 0.2; transparent: true" position="0 0 0" visible="false"></a-sphere>
+    </a-entity>
+    
+    <a-entity class="vesak-lantern" position="8 2 -8" clickable="type: vesak-lantern">
+      <a-sphere color="#9370DB" radius="0.6" position="0 0 0"></a-sphere>
+      <a-sphere class="lantern-glow" radius="1.2" material="color: #9370DB; opacity: 0.2; transparent: true" position="0 0 0" visible="false"></a-sphere>
+    </a-entity>
+    
+    <a-entity class="vesak-lantern" position="-10 2 -10" clickable="type: vesak-lantern">
+      <a-octahedron color="#FF8C00" radius="0.7" position="0 0 0"></a-octahedron>
+      <a-sphere class="lantern-glow" radius="1.2" material="color: #FF8C00; opacity: 0.2; transparent: true" position="0 0 0" visible="false"></a-sphere>
+    </a-entity>
+    
+    <!-- Fireflies - visible at night -->
+    <a-entity class="firefly" position="10 1.5 5" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="-10 2 5" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="5 1 10" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="-5 2.5 -8" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="8 1.2 -5" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="-8 1.8 -12" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="12 2.2 12" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="-2 1.5 15" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="15 3 -2" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    <a-entity class="firefly" position="-15 2 -15" light="type: point; color: #AAFFAA; intensity: 0.4; distance: 2" visible="false" firefly></a-entity>
+    
+    <!-- Devotees -->
+    <a-entity class="devotee" position="2 0 -12">
+      <!-- Body -->
+      <a-cylinder color="#FFD700" height="1.5" radius="0.25" position="0 0.75 0"></a-cylinder>
+      <!-- Head -->
+      <a-sphere color="#DEB887" radius="0.25" position="0 1.75 0"></a-sphere>
+      <!-- Animation -->
+      <a-animation attribute="rotation" from="0 0 0" to="0 360 0" dur="20000" easing="linear" repeat="indefinite"></a-animation>
+    </a-entity>
+    
+    <a-entity class="devotee" position="-3 0 -13">
+      <!-- Body -->
+      <a-cylinder color="#FFA500" height="1.5" radius="0.25" position="0 0.75 0"></a-cylinder>
+      <!-- Head -->
+      <a-sphere color="#DEB887" radius="0.25" position="0 1.75 0"></a-sphere>
+      <!-- Animation -->
+      <a-animation attribute="position" from="-3 0 -13" to="-1 0 -13" dur="15000" direction="alternate" easing="linear" repeat="indefinite"></a-animation>
+    </a-entity>
+    
+    <a-entity class="devotee" position="12 0 2">
+      <!-- Body -->
+      <a-cylinder color="#FFD700" height="1.5" radius="0.25" position="0 0.75 0"></a-cylinder>
+      <!-- Head -->
+      <a-sphere color="#DEB887" radius="0.25" position="0 1.75 0"></a-sphere>
+      <!-- Animation -->
+      <a-animation attribute="position" from="12 0 2" to="12 0 -2" dur="18000" direction="alternate" easing="linear" repeat="indefinite"></a-animation>
+    </a-entity>
+    
+    <a-entity class="devotee" position="-12 0 -2">
+      <!-- Body -->
+      <a-cylinder color="#FFA500" height="1.5" radius="0.25" position="0 0.75 0"></a-cylinder>
+      <!-- Head -->
+      <a-sphere color="#DEB887" radius="0.25" position="0 1.75 0"></a-sphere>
+      <!-- Animation -->
+      <a-animation attribute="position" from="-12 0 -2" to="-12 0 2" dur="16000" direction="alternate" easing="linear" repeat="indefinite"></a-animation>
+    </a-entity>
+    
+    <a-entity class="devotee" position="0 0 10">
+      <!-- Body -->
+      <a-cylinder color="#FFD700" height="1.5" radius="0.25" position="0 0.75 0"></a-cylinder>
+      <!-- Head -->
+      <a-sphere color="#DEB887" radius="0.25" position="0 1.75 0"></a-sphere>
+      <!-- Animation -->
+      <a-animation attribute="position" from="0 0 10" to="5 0 10" dur="20000" direction="alternate" easing="linear" repeat="indefinite"></a-animation>
+    </a-entity>
+    
+    <a-entity class="devotee" position="-2 0 12">
+      <!-- Body -->
+      <a-cylinder color="#FFA500" height="1.5" radius="0.25" position="0 0.75 0"></a-cylinder>
+      <!-- Head -->
+      <a-sphere color="#DEB887" radius="0.25" position="0 1.75 0"></a-sphere>
+      <!-- Animation -->
+      <a-animation attribute="rotation" from="0 0 0" to="0 360 0" dur="25000" easing="linear" repeat="indefinite"></a-animation>
+    </a-entity>
+    
+    <!-- Camera + Controls -->
+    <a-entity id="player" position="0 1.6 20">
+      <a-entity camera look-controls wasd-controls="acceleration: 20">
+        <a-entity cursor="fuse: true; fuseTimeout: 500" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03" material="color: white; shader: flat"></a-entity>
+      </a-entity>
+    </a-entity>
+    
+    <!-- Navigation path for worship journey -->
+    <a-entity walk-path="points: [
+      {x: 0, y: 0, z: 20}, 
+      {x: 0, y: 0, z: -10}, 
+      {x: 15, y: 0, z: 0}, 
+      {x: -15, y: 0, z: 0}, 
+      {x: 0, y: 0, z: 10}
+    ]"></a-entity>
+  </a-scene>
+  
+  <script>
+    // Set up the scene when everything is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Force first environment update
+      const timeController = document.querySelector('[time-controller]');
+      if (timeController && timeController.components['time-controller']) {
+        timeController.components['time-controller'].updateEnvironment();
+      }
+      
+      // Store original positions for bodhi leaves
+      const leaves = document.querySelectorAll('.bodhi-leaf');
+      leaves.forEach(leaf => {
+        const position = leaf.getAttribute('position');
+        leaf.dataset.originalPos = `${position.x} ${position.y} ${position.z}`;
+      });
+    });
+  </script>
+</body>
+</html>
