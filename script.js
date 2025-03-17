@@ -16,6 +16,346 @@ document.addEventListener('DOMContentLoaded', function() {
   const rightDoor = document.getElementById('right-door');
   const cursor = document.getElementById('cursor');
   
+  // Sound effects
+  const kaviBanaDay = new Howl({
+    src: [document.getElementById('kavi-bana-day').getAttribute('src')],
+    loop: true,
+    volume: 0.5,
+    html5: true
+  });
+  
+  const kaviBanaNight = new Howl({
+    src: [document.getElementById('kavi-bana-night').getAttribute('src')],
+    loop: true,
+    volume: 0.7,
+    html5: true
+  });
+  
+  const clickSound = new Howl({
+    src: [document.getElementById('click-sound').getAttribute('src')],
+    volume: 0.8,
+    html5: true
+  });
+  
+  // Simulation of loading progress
+  let progress = 0;
+  const loadingInterval = setInterval(() => {
+    progress += Math.random() * 10;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(loadingInterval);
+      
+      // Fade out loading screen
+      setTimeout(() => {
+        loadingScreen.style.opacity = 0;
+        loadingScreen.style.transition = 'opacity 1s ease';
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+          // Initialize scene after loading
+          initScene();
+        }, 1000);
+      }, 500);
+    }
+    loadingProgress.style.width = progress + '%';
+    loadingText.textContent = `Loading Nalapana Jataka Experience... ${Math.floor(progress)}%`;
+  }, 200);
+  
+  // Initialize scene
+  function initScene() {
+    updateTimeBasedElements();
+    
+    // Set up event listeners
+    cursor.addEventListener('click', handleClick);
+    
+    // Set up animation loop for continuous effects
+    setInterval(updateTimeBasedElements, 60000); // Check every minute
+    
+    // Start background music based on time
+    if (isNightTime()) {
+      kaviBanaNight.play();
+    } else {
+      kaviBanaDay.play();
+    }
+  }
+  
+  // Check if current time is night time (5 PM to 6 AM)
+  function isNightTime() {
+    const currentHour = new Date().getHours();
+    return currentHour >= 17 || currentHour < 6;
+  }
+  
+  // Update elements based on time of day
+  function updateTimeBasedElements() {
+    const isNight = isNightTime();
+    
+    // Update skybox
+    skybox.setAttribute('material', {
+      src: isNight ? '#sky-night' : '#sky-day'
+    });
+    
+    // Update lighting
+    ambientDayLight.setAttribute('visible', !isNight);
+    ambientNightLight.setAttribute('visible', isNight);
+    directionalDayLight.setAttribute('visible', !isNight);
+    directionalNightLight.setAttribute('visible', isNight);
+    
+    // Update thorana doors
+    if (isNight) {
+      openThoranaWithAnimation();
+      nightLights.setAttribute('visible', true);
+      jatakaPanels.setAttribute('visible', true);
+      
+      // Switch music if needed
+      if (!kaviBanaNight.playing()) {
+        kaviBanaDay.fade(0.5, 0, 1000);
+        setTimeout(() => {
+          kaviBanaDay.pause();
+          kaviBanaNight.play();
+        }, 1000);
+      }
+    } else {
+      closeThoranaWithAnimation();
+      nightLights.setAttribute('visible', false);
+      jatakaPanels.setAttribute('visible', false);
+      
+      // Switch music if needed
+      if (!kaviBanaDay.playing()) {
+        kaviBanaNight.fade(0.7, 0, 1000);
+        setTimeout(() => {
+          kaviBanaNight.pause();
+          kaviBanaDay.play();
+        }, 1000);
+      }
+    }
+  }
+  
+  // Open thorana with animation
+  function openThoranaWithAnimation() {
+    // Animate left door
+    leftDoor.setAttribute('animation', {
+      property: 'position',
+      to: '-4.5 5 0',
+      dur: 2000,
+      easing: 'easeOutQuad'
+    });
+    
+    // Animate right door
+    rightDoor.setAttribute('animation', {
+      property: 'position',
+      to: '4.5 5 0',
+      dur: 2000,
+      easing: 'easeOutQuad'
+    });
+  }
+  
+  // Close thorana with animation
+  function closeThoranaWithAnimation() {
+    // Animate left door
+    leftDoor.setAttribute('animation', {
+      property: 'position',
+      to: '-2.5 5 0',
+      dur: 2000,
+      easing: 'easeOutQuad'
+    });
+    
+    // Animate right door
+    rightDoor.setAttribute('animation', {
+      property: 'position',
+      to: '2.5 5 0',
+      dur: 2000,
+      easing: 'easeOutQuad'
+    });
+  }
+  
+  // Handle click events in the scene
+  function handleClick(event) {
+    clickSound.play();
+    
+    // Get the clicked element
+    const clickedEl = event.detail.intersectedEl;
+    
+    // Handle different interactions based on what was clicked
+    if (clickedEl.closest('#jataka-panels')) {
+      // Show more detailed information or animate the clicked panel
+      clickedEl.setAttribute('animation', {
+        property: 'scale',
+        to: '1.1 1.1 1.1',
+        dur: 300,
+        easing: 'easeOutQuad'
+      });
+      
+      setTimeout(() => {
+        clickedEl.setAttribute('animation', {
+          property: 'scale',
+          to: '1 1 1',
+          dur: 300,
+          easing: 'easeOutQuad'
+        });
+      }, 300);
+    } else if (clickedEl.closest('#thorana-structure')) {
+      // Toggle thorana state manually when clicked on structure
+      if (jatakaPanels.getAttribute('visible') === 'true') {
+        // Force close if open at night
+        closeThoranaWithAnimation();
+        jatakaPanels.setAttribute('visible', false);
+        
+        setTimeout(() => {
+          // But reopen after 5 seconds if it's night time
+          if (isNightTime()) {
+            openThoranaWithAnimation();
+            jatakaPanels.setAttribute('visible', true);
+          }
+        }, 5000);
+      } else if (isNightTime()) {
+        // Force open if closed at night
+        openThoranaWithAnimation();
+        jatakaPanels.setAttribute('visible', true);
+      }
+    }
+  }
+  
+  // Add window resize handler for responsive design
+  window.addEventListener('resize', function() {
+    // Adjust camera or other elements if needed
+  });
+
+  // Add immersive mode toggle for mobile
+  document.addEventListener('keydown', function(event) {
+    // 'F' key for fullscreen toggle
+    if (event.key === 'f' || event.key === 'F') {
+      toggleFullscreen();
+    }
+  });
+  
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.log(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+  
+  // Add debug info to console
+  console.log("Digital Vesak Thorana - Nalapana Jataka");
+  console.log("Created by: Omindu Dissanayake");
+  console.log("Java Institute - Full Stack Engineer");
+  console.log(`Current time: ${new Date().toLocaleTimeString()}`);
+  console.log(`Thorana status: ${isNightTime() ? 'Open (Night Mode)' : 'Closed (Day Mode)'}`);
+});
+
+// Add A-Frame component for animated glow effect on lights
+AFRAME.registerComponent('glow-effect', {
+  schema: {
+    intensity: {type: 'number', default: 0.5},
+    color: {type: 'color', default: '#FFF'},
+    speed: {type: 'number', default: 1}
+  },
+  
+  init: function() {
+    this.time = 0;
+    this.originalIntensity = this.data.intensity;
+  },
+  
+  tick: function(time, timeDelta) {
+    this.time += timeDelta / 1000 * this.data.speed;
+    
+    // Create pulsing effect
+    const pulseValue = Math.sin(this.time) * 0.2 + 0.8;
+    
+    // Apply to material
+    if (this.el.getAttribute('material')) {
+      this.el.setAttribute('material', 'emissiveIntensity', this.originalIntensity * pulseValue);
+    }
+    
+    // Apply to light if present
+    const light = this.el.querySelector('[light]');
+    if (light) {
+      light.setAttribute('light', 'intensity', this.originalIntensity * pulseValue);
+    }
+  }
+});
+
+// Add component for spinning animation on certain elements
+AFRAME.registerComponent('slow-spin', {
+  schema: {
+    speed: {type: 'number', default: 0.1}
+  },
+  
+  tick: function(time, timeDelta) {
+    // Get current rotation
+    const rotation = this.el.getAttribute('rotation');
+    
+    // Update Y rotation
+    rotation.y += this.data.speed * (timeDelta / 16);
+    
+    // Apply new rotation
+    this.el.setAttribute('rotation', rotation);
+  }
+});
+
+// Add custom shaders for enhanced visual effects
+AFRAME.registerShader('gradient-sky', {
+  schema: {
+    topColor: {type: 'color', default: '#1a3fb0'},
+    bottomColor: {type: 'color', default: '#0e175f'},
+    speed: {type: 'number', default: 0.001}
+  },
+  
+  vertexShader: `
+    varying vec2 vUV;
+    
+    void main() {
+      vUV = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  
+  fragmentShader: `
+    uniform vec3 topColor;
+    uniform vec3 bottomColor;
+    uniform float speed;
+    uniform float time;
+    varying vec2 vUV;
+    
+    void main() {
+      float h = vUV.y + sin(time * speed) * 0.1;
+      gl_FragColor = vec4(mix(bottomColor, topColor, h), 1.0);
+    }
+  `
+});
+
+
+
+
+
+
+
+
+
+
+
+// Main script for Digital Vesak Thorana - Nalapana Jataka
+document.addEventListener('DOMContentLoaded', function() {
+  // Elements
+  const loadingScreen = document.getElementById('loading-screen');
+  const loadingProgress = document.getElementById('loading-progress');
+  const loadingText = document.getElementById('loading-text');
+  const thorana = document.getElementById('thorana');
+  const jatakaPanels = document.getElementById('jataka-panels');
+  const nightLights = document.getElementById('night-lights');
+  const skybox = document.getElementById('skybox');
+  const ambientDayLight = document.getElementById('ambient-day-light');
+  const ambientNightLight = document.getElementById('ambient-night-light');
+  const directionalDayLight = document.getElementById('directional-day-light');
+  const directionalNightLight = document.getElementById('directional-night-light');
+  const leftDoor = document.getElementById('left-door');
+  const rightDoor = document.getElementById('right-door');
+  const cursor = document.getElementById('cursor');
+  
   // Create fallback textures
   createFallbackTextures();
   
